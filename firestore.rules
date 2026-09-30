@@ -1,0 +1,202 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isPolicymaker() {
+      return isSignedIn() && (
+        exists(/databases/$(database)/documents/policymakers/$(request.auth.uid)) ||
+        request.auth.token.email == 'vtharunofficial57@gmail.com'
+      );
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Entity validation functions
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'email', 'role']) &&
+        data.uid is string && data.uid.size() <= 128 &&
+        data.email is string && data.email.size() <= 128 &&
+        (data.role == 'citizen' || data.role == 'policymaker');
+    }
+
+    function isValidCitizenRequest(data) {
+      return data.keys().hasAll(['id', 'userId', 'title', 'description', 'category', 'status']) &&
+        data.id is string && data.id.size() <= 64 &&
+        data.userId is string && data.userId.size() <= 128 &&
+        data.title is string && data.title.size() <= 200 &&
+        data.description is string && data.description.size() <= 2000 &&
+        data.category is string && data.category.size() <= 100 &&
+        data.status is string && data.status.size() <= 50;
+    }
+
+    function isValidProject(data) {
+      return data.keys().hasAll(['id', 'title', 'category', 'areaName', 'status', 'progress']) &&
+        data.id is string && data.id.size() <= 64 &&
+        data.title is string && data.title.size() <= 200 &&
+        data.category is string && data.category.size() <= 100 &&
+        data.areaName is string && data.areaName.size() <= 100 &&
+        data.progress is number;
+    }
+
+    function isValidCluster(data) {
+      return data.keys().hasAll(['id', 'title', 'category', 'affectedArea', 'requestCount']) &&
+        data.id is string && data.id.size() <= 64 &&
+        data.title is string && data.title.size() <= 200 &&
+        data.category is string && data.category.size() <= 100 &&
+        data.affectedArea is string && data.affectedArea.size() <= 100 &&
+        data.requestCount is number;
+    }
+
+    function isValidGovernmentData(data) {
+      return data.keys().hasAll(['id', 'areaName', 'population']) &&
+        data.id is string && data.id.size() <= 64 &&
+        data.areaName is string && data.areaName.size() <= 100 &&
+        data.population is number;
+    }
+
+    function isValidRecommendation(data) {
+      return data.keys().hasAll(['id', 'title', 'problemAddressed', 'priorityScore', 'explanation']) &&
+        data.id is string && data.id.size() <= 64 &&
+        data.title is string && data.title.size() <= 250 &&
+        data.problemAddressed is string && data.problemAddressed.size() <= 500 &&
+        data.priorityScore is number &&
+        data.explanation is string && data.explanation.size() <= 2000;
+    }
+
+    function isValidSimulation(data) {
+      return data.keys().hasAll(['id', 'name', 'totalBudget', 'allocations', 'results']) &&
+        data.id is string && data.id.size() <= 64 &&
+        data.name is string && data.name.size() <= 150 &&
+        data.totalBudget is number;
+    }
+
+    function isValidPriority(data) {
+      return data.keys().hasAll(['id', 'name', 'weight']) &&
+        data.id is string && data.id.size() <= 64 &&
+        data.name is string && data.name.size() <= 100 &&
+        data.weight is number;
+    }
+
+    function isValidNotification(data) {
+      return data.keys().hasAll(['id', 'userId', 'requestId', 'title', 'message']) &&
+        data.id is string && data.id.size() <= 64 &&
+        data.userId is string && data.userId.size() <= 128 &&
+        data.requestId is string && data.requestId.size() <= 64 &&
+        data.title is string && data.title.size() <= 200 &&
+        data.message is string && data.message.size() <= 1000;
+    }
+
+    // 1. Users collection
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isPolicymaker();
+      allow list: if isPolicymaker();
+      allow create: if isOwner(userId) && isValidUser(incoming()) && (
+        incoming().role == 'citizen' || isPolicymaker()
+      );
+      allow update: if isOwner(userId) && isValidUser(incoming()) && (
+        incoming().role == existing().role || isPolicymaker()
+      );
+      allow delete: if isOwner(userId) || isPolicymaker();
+    }
+
+    // 2. Policymakers registry
+    match /policymakers/{userId} {
+      allow read: if isSignedIn();
+      allow write: if isPolicymaker();
+    }
+
+    // 3. Citizen requests
+    match /citizenRequests/{requestId} {
+      allow get: if isSignedIn() && isValidId(requestId);
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(requestId) &&
+        isValidCitizenRequest(incoming()) &&
+        incoming().userId == request.auth.uid;
+      allow update: if isSignedIn() && isValidId(requestId) &&
+        isValidCitizenRequest(incoming()) && (
+          isPolicymaker() ||
+          (isOwner(existing().userId) && existing().status == 'Submitted')
+        );
+      allow delete: if isPolicymaker() || (isOwner(existing().userId) && existing().status == 'Submitted');
+    }
+
+    // 4. Issue Clusters
+    match /issueClusters/{clusterId} {
+      allow read: if isSignedIn() && isValidId(clusterId);
+      allow list: if isSignedIn();
+      allow create, update, delete: if isPolicymaker() && isValidId(clusterId) && isValidCluster(incoming());
+    }
+
+    // 5. Government Data
+    match /governmentData/{areaId} {
+      allow read: if isSignedIn() && isValidId(areaId);
+      allow list: if isSignedIn();
+      allow create, update, delete: if isPolicymaker() && isValidId(areaId) && isValidGovernmentData(incoming());
+    }
+
+    // 6. Projects
+    match /projects/{projectId} {
+      allow read: if isSignedIn() && isValidId(projectId);
+      allow list: if isSignedIn();
+      allow create, update, delete: if isPolicymaker() && isValidId(projectId) && isValidProject(incoming());
+    }
+
+    // 7. AI Recommendations
+    match /recommendations/{recId} {
+      allow read: if isSignedIn() && isValidId(recId);
+      allow list: if isSignedIn();
+      allow create, update, delete: if isPolicymaker() && isValidId(recId) && isValidRecommendation(incoming());
+    }
+
+    // 8. Budget Simulations
+    match /budgetSimulations/{simulationId} {
+      allow read: if isSignedIn() && isValidId(simulationId);
+      allow list: if isSignedIn();
+      allow create: if isPolicymaker() && isValidId(simulationId) && isValidSimulation(incoming()) && incoming().createdBy == request.auth.uid;
+      allow update, delete: if isPolicymaker() && isValidId(simulationId) && (existing().createdBy == request.auth.uid || isPolicymaker());
+    }
+
+    // 9. National Priorities
+    match /nationalPriorities/{priorityId} {
+      allow read: if isSignedIn() && isValidId(priorityId);
+      allow list: if isSignedIn();
+      allow write: if isPolicymaker() && isValidId(priorityId) && isValidPriority(incoming());
+    }
+
+    // 10. Citizen Notifications
+    match /notifications/{notificationId} {
+      allow get: if isSignedIn() && isValidId(notificationId) && (isOwner(existing().userId) || isPolicymaker());
+      allow list: if isSignedIn();
+      allow create: if isPolicymaker() && isValidId(notificationId) && isValidNotification(incoming());
+      allow update: if isSignedIn() && isValidId(notificationId) && (
+        isPolicymaker() ||
+        (isOwner(existing().userId) && incoming().diff(existing()).affectedKeys().hasOnly(['read']))
+      );
+      allow delete: if isPolicymaker() || isOwner(existing().userId);
+    }
+  }
+}

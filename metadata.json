@@ -1,0 +1,6 @@
+{
+  "name": "CivicPulse AI – Multilingual Citizen Infrastructure Intelligence Platform",
+  "description": "AI-powered civic intelligence platform consolidating multilingual citizen requests, demographic data, and infrastructure gap analysis to deliver explainable project recommendations and decision-support for policymakers.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

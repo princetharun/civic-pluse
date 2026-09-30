@@ -1,0 +1,237 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile with role-based attributes",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "maxLength": 128 },
+        "displayName": { "type": "string", "maxLength": 128 },
+        "role": { "type": "string", "enum": ["citizen", "policymaker"] },
+        "photoURL": { "type": "string", "maxLength": 500 },
+        "preferredLanguage": { "type": "string", "enum": ["en", "hi", "ta", "te", "bn"] },
+        "createdAt": { "type": "string", "maxLength": 64 },
+        "updatedAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["uid", "name", "email", "role"]
+    },
+    "Policymaker": {
+      "title": "Policymaker",
+      "description": "Policymaker identity registry document used for RBAC checks",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "maxLength": 128 },
+        "department": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["uid", "email"]
+    },
+    "CitizenRequest": {
+      "title": "CitizenRequest",
+      "description": "Multilingual citizen infrastructure request and AI analysis",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 64 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "userEmail": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 200 },
+        "description": { "type": "string", "maxLength": 2000 },
+        "originalLanguage": { "type": "string", "enum": ["en", "hi", "ta", "te", "bn"] },
+        "translatedText": { "type": "string", "maxLength": 2000 },
+        "category": { "type": "string", "enum": ["Roads", "Water", "Electricity", "Healthcare", "Education", "Public Transport", "Sanitation", "Housing", "Digital Infrastructure", "Other"] },
+        "severity": { "type": "string", "enum": ["Low", "Medium", "High", "Critical"] },
+        "infrastructureType": { "type": "string", "maxLength": 100 },
+        "keyDemand": { "type": "string", "maxLength": 250 },
+        "suggestedAction": { "type": "string", "maxLength": 500 },
+        "location": { "type": "object" },
+        "imageUrl": { "type": "string", "maxLength": 500 },
+        "photoUrl": { "type": "string", "maxLength": 1000 },
+        "photoType": { "type": "string", "enum": ["uploaded", "url"] },
+        "audioUrl": { "type": "string", "maxLength": 500 },
+        "status": { "type": "string", "enum": ["Submitted", "Under Review", "Verified", "Prioritized", "Project Planned", "In Progress", "Completed"] },
+        "statusHistory": { "type": "array" },
+        "clusterId": { "type": "string", "maxLength": 64 },
+        "priorityScore": { "type": "number" },
+        "createdAt": { "type": "string", "maxLength": 64 },
+        "updatedAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "userId", "title", "description", "category", "status"]
+    },
+    "IssueCluster": {
+      "title": "IssueCluster",
+      "description": "Deduplicated cluster grouping semantically related citizen requests",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 64 },
+        "title": { "type": "string", "maxLength": 200 },
+        "category": { "type": "string", "maxLength": 100 },
+        "affectedArea": { "type": "string", "maxLength": 100 },
+        "demandLevel": { "type": "string", "enum": ["Low", "Medium", "High", "Critical"] },
+        "requestCount": { "type": "number" },
+        "requestIds": { "type": "array" },
+        "summary": { "type": "string", "maxLength": 1000 },
+        "status": { "type": "string", "maxLength": 50 },
+        "createdAt": { "type": "string", "maxLength": 64 },
+        "updatedAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "title", "category", "affectedArea", "requestCount"]
+    },
+    "GovernmentData": {
+      "title": "GovernmentData",
+      "description": "Baseline regional demographic and infrastructure capacity data",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 64 },
+        "areaName": { "type": "string", "maxLength": 100 },
+        "district": { "type": "string", "maxLength": 100 },
+        "state": { "type": "string", "maxLength": 100 },
+        "population": { "type": "number" },
+        "demographics": { "type": "object" },
+        "infrastructureCapacity": { "type": "object" },
+        "lat": { "type": "number" },
+        "lng": { "type": "number" },
+        "existingProjectsCount": { "type": "number" },
+        "updatedAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "areaName", "population"]
+    },
+    "Project": {
+      "title": "Project",
+      "description": "Infrastructure development project tracking before/after impact",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 64 },
+        "title": { "type": "string", "maxLength": 200 },
+        "category": { "type": "string", "maxLength": 100 },
+        "areaName": { "type": "string", "maxLength": 100 },
+        "status": { "type": "string", "enum": ["Project Planned", "In Progress", "Completed"] },
+        "progress": { "type": "number" },
+        "budgetAllocated": { "type": "number" },
+        "budgetSpent": { "type": "number" },
+        "affectedPopulation": { "type": "number" },
+        "expectedCompletion": { "type": "string", "maxLength": 64 },
+        "beforeImpact": { "type": "string", "maxLength": 500 },
+        "afterImpact": { "type": "string", "maxLength": 500 },
+        "lat": { "type": "number" },
+        "lng": { "type": "number" },
+        "createdAt": { "type": "string", "maxLength": 64 },
+        "updatedAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "title", "category", "areaName", "status", "progress"]
+    },
+    "Recommendation": {
+      "title": "Recommendation",
+      "description": "AI-recommended development project with explainable AI reasoning",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 64 },
+        "title": { "type": "string", "maxLength": 250 },
+        "problemAddressed": { "type": "string", "maxLength": 500 },
+        "category": { "type": "string", "maxLength": 100 },
+        "areaName": { "type": "string", "maxLength": 100 },
+        "affectedPopulation": { "type": "number" },
+        "infrastructureGap": { "type": "string", "maxLength": 100 },
+        "priorityScore": { "type": "number" },
+        "estimatedBudget": { "type": "number" },
+        "expectedImpact": { "type": "string", "maxLength": 1000 },
+        "evidence": { "type": "string", "maxLength": 1000 },
+        "confidenceScore": { "type": "number" },
+        "explanation": { "type": "string", "maxLength": 2000 },
+        "duplicateCheck": { "type": "object" },
+        "status": { "type": "string", "maxLength": 50 },
+        "createdAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "title", "problemAddressed", "priorityScore", "explanation"]
+    },
+    "BudgetSimulation": {
+      "title": "BudgetSimulation",
+      "description": "Simulated what-if scenario for capital budget allocation",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 64 },
+        "name": { "type": "string", "maxLength": 150 },
+        "totalBudget": { "type": "number" },
+        "allocations": { "type": "object" },
+        "results": { "type": "object" },
+        "createdBy": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "name", "totalBudget", "allocations", "results"]
+    },
+    "NationalPriority": {
+      "title": "NationalPriority",
+      "description": "Configurable national priority weighting for infrastructure alignment",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 64 },
+        "name": { "type": "string", "maxLength": 100 },
+        "category": { "type": "string", "maxLength": 100 },
+        "weight": { "type": "number" },
+        "description": { "type": "string", "maxLength": 500 },
+        "updatedAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "name", "weight"]
+    },
+    "CitizenNotification": {
+      "title": "CitizenNotification",
+      "description": "Notification sent to citizen regarding their request lifecycle updates",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 64 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "requestId": { "type": "string", "maxLength": 64 },
+        "title": { "type": "string", "maxLength": 200 },
+        "message": { "type": "string", "maxLength": 1000 },
+        "language": { "type": "string", "maxLength": 10 },
+        "read": { "type": "boolean" },
+        "createdAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "userId", "requestId", "title", "message"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User profile with role and preferences"
+    },
+    "/policymakers/{userId}": {
+      "schema": "Policymaker",
+      "description": "Policymaker registry for RBAC verification"
+    },
+    "/citizenRequests/{requestId}": {
+      "schema": "CitizenRequest",
+      "description": "Citizen infrastructure requests and AI analyses"
+    },
+    "/issueClusters/{clusterId}": {
+      "schema": "IssueCluster",
+      "description": "Semantic clusters of citizen requests"
+    },
+    "/governmentData/{areaId}": {
+      "schema": "GovernmentData",
+      "description": "Regional population and infrastructure capacity benchmarks"
+    },
+    "/projects/{projectId}": {
+      "schema": "Project",
+      "description": "Infrastructure development projects"
+    },
+    "/recommendations/{recId}": {
+      "schema": "Recommendation",
+      "description": "AI explainable project recommendations"
+    },
+    "/budgetSimulations/{simulationId}": {
+      "schema": "BudgetSimulation",
+      "description": "Saved policymaker budget simulation scenarios"
+    },
+    "/nationalPriorities/{priorityId}": {
+      "schema": "NationalPriority",
+      "description": "National development priority weightings"
+    },
+    "/notifications/{notificationId}": {
+      "schema": "CitizenNotification",
+      "description": "Citizen update notifications"
+    }
+  }
+}
